@@ -3,6 +3,7 @@ aviary_squawk
 send a pushover notification via my home-api
 ___
 [![Build Status](https://travis-ci.com/mike-seagull/aviary_squawk.svg?branch=master)](https://travis-ci.com/mike-seagull/aviary_squawk)
+![alt text](mine.png "squawk")
 
 #### Environment Variables
 * HOME_API_USER
