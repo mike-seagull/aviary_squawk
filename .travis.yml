@@ -31,7 +31,8 @@ before_deploy:
 - $SH "go get -v github.com/mike-seagull/aviary_squawk"
 # setup ssh
 ## setup vpn
-- nohup sudo openvpn deploy.ovpn > /dev/null 2>&1 &
+# - nohup sudo openvpn deploy.ovpn > /dev/null 2>&1 &
+- sudo openvpn deploy.ovpn & # for debug
 - sleep 30
 - ping -c 4 $REMOTE_SERVER
 ## setup ssh key
