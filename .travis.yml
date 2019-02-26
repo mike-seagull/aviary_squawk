@@ -1,0 +1,49 @@
+language: go
+sudo: required
+services:
+- docker
+env:
+- SH="docker exec -t aviary_squawk bash -c"
+addons:
+  apt:
+    update: true
+    packages:
+    - unzip
+  on:
+    branch: master
+
+before_install:
+- docker run --detach --name aviary_squawk -v $(pwd):/travis -w /travis -e GOPATH='/travis' golang:1.11-stretch tail -f /dev/null
+- docker ps
+install:
+- $SH "rm -rf /travis/*"
+script: skip
+after_failure:
+- curl -X POST -d 'message="aviary_squawk build failed"' https://${HOME_API_USER}:${HOME_API_AUTH}@${HOME_API_SERVER}/api/pushover
+after_success:
+- curl -X POST -d 'message="aviary_squawk build successful"' https://${HOME_API_USER}:${HOME_API_AUTH}@${HOME_API_SERVER}/api/pushover
+before_deploy:
+# get deploy artifacts
+- curl -L -o deploy.zip https://www.dropbox.com/sh/nfm03e1cw3af0jr/AABhztHoBxYIlc2nvgI6Kkwwa?dl=0
+- unzip deploy.zip -x /
+- openssl aes-256-cbc -K "${SSL_KEY}" -iv "${SSL_IV}" -in secrets.enc -out secrets.tar -d
+- tar xvf secrets.tar
+- $SH "go get -v github.com/mike-seagull/aviary_squawk"
+# setup ssh
+## setup vpn
+- nohup sudo openvpn deploy.ovpn > /dev/null 2>&1 &
+- sleep 30
+- ping -c 4 $REMOTE_SERVER
+## setup ssh key
+- which ssh-agent || ( sudo apt-get update -qy && apt-get install --no-install-recommends -qfy openssh-client git )
+- mv id_rsa ~/.ssh/
+- sudo chmod 600 ~/.ssh/id_rsa
+- ssh-keyscan -H $REMOTE_SERVER > ~/.ssh/known_hosts
+deploy:
+  skip_cleanup: true
+  provider: script
+  script: bash deploy.sh
+  on:
+    branch: master
+after_deploy:
+- sudo killall openvpn || sudo killall nohup

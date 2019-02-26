@@ -11,4 +11,5 @@ ___
 * HOME_API_DOMAIN
 #### To check a domain
 ```aviary_squawk -m $MESSAGE -t $TITLE```
-
+#### Good use case
+```/slow/process && aviary_sqawk -m "process successful" || aviary_squawk -m "process failed"```

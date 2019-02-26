@@ -14,4 +14,12 @@
 # Goland
 .idea/
 
+# travis files
+deploy.sh
+id_rsa
+deploy.ovpn
+secrets.tar
+secrets.enc
+
+# mac file
 .DS_Store
