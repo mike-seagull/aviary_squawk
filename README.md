@@ -1,15 +1,17 @@
-aviary_squawk
+pushover_squawk
 ===
-send a pushover notification via my home-api
+sends a pushover notifications
 ___
-[![Build Status](https://travis-ci.com/mike-seagull/aviary_squawk.svg?branch=master)](https://travis-ci.com/mike-seagull/aviary_squawk)
 ![alt text](mine.png "squawk")
 
 #### Environment Variables
-* HOME_API_USER
-* HOME_API_AUTH
-* HOME_API_DOMAIN
+##### Required:
+* PUSHOVER_API_TOKEN
+* PUSHOVER_USER_KEY
+##### Optional:
+* ISLAMBDA
+* VERBOSE
 #### To check a domain
-```aviary_squawk -m $MESSAGE -t $TITLE```
+```pushover_squawk -m $MESSAGE -t $TITLE```
 #### Good use case
-```/slow/process && aviary_sqawk -m "process successful" || aviary_squawk -m "process failed"```
+```/painfully/slow/process && pushover_squawk -m "process successful" || pushover_squawk -m "process failed"```
