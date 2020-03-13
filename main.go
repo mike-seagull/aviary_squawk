@@ -1,49 +1,110 @@
 package main
 
 import (
-	"encoding/base64"
 	"github.com/akamensky/argparse"
-	"github.com/google/logger"
-	"github.com/imroc/req"
-	"io/ioutil"
+    log "github.com/sirupsen/logrus"
+    "github.com/gregdel/pushover"
+	"github.com/aws/aws-lambda-go/lambda"
 	"os"
+	"strings"
+	"context"
+	"strconv"
+	"fmt"
 )
+type Event struct {
+	Token string `json:"token"`
+	User string `json:"user"`
+	Message string `json:"message"`
+	Title string `json:"title"`
+}
+type Response struct {
+	success bool
+	message string
+}
+var is_lambda bool
+var verbose bool
+var pushover_api_token string
+var pushover_user_key string
 
-func main() {
+func init() {
+	// setup optional environment variables
+	is_lambda = false
+	ISLAMBDA := strings.ToLower(os.Getenv("ISLAMBDA"))
+	if len(ISLAMBDA) > 0 {
+		is_lambda, _ = strconv.ParseBool(ISLAMBDA)
+	}
+	verbose = false
+	VERBOSE := strings.ToLower(os.Getenv("VERBOSE"))
+	if len(VERBOSE) > 0 {
+		verbose, _ = strconv.ParseBool(VERBOSE)
+	}
+	// setup required env vars
+	pushover_api_token = strings.ToLower(os.Getenv("PUSHOVER_API_TOKEN"))
+	pushover_user_key = strings.ToLower(os.Getenv("PUSHOVER_USER_KEY"))
+	if len(pushover_api_token) <= 0 || len(pushover_user_key) <= 0 {
+		fmt.Println("environment variables \"PUSHOVER_API_TOKEN\" and \"PUSHOVER_USER_KEY\" are required")
+		os.Exit(1)
+	}
+	// setup logging
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp: true,
+	})
+	log.SetOutput(os.Stdout)
+	if verbose {
+		log.SetLevel(log.TraceLevel)
+	} else {
+		log.SetLevel(log.ErrorLevel)
+	}
+}
+func sendMessage(message string, title string) (pushover.Response, error) {
+	log.Trace("in sendMessage")
+    app := pushover.New(pushover_api_token)
+    recipient := pushover.NewRecipient(pushover_user_key)
+    msg := pushover.NewMessageWithTitle(message, title)
+    response, err := app.SendMessage(msg, recipient)
+    if err != nil {
+        log.Fatal("error while sending message: \""+err.Error()+"\"")
+    } else {
+    	log.Info("message sent successfully")
+    }
+	log.Info("response: \""+response.String()+"\"")
+    return *response, err
+}
+func LambdaHandler(ctx context.Context, req Event) (Response, error) {
+	log.Trace("in LambdaHandler")
+	resp, err := sendMessage(req.Message, req.Title)
+	if err != nil {
+		return Response{success: false, message: err.Error()}, err
+	} else {
+		return Response{success: true, message: resp.String()}, nil
+	}
+}
+func CommandLine() {
+	log.Trace("in CommandLine")
 	// parse arguments
 	parser := argparse.NewParser(os.Args[0], "")
 	msg := parser.String("m", "message", &argparse.Options{Required: true, Help: "message to send"})
-	title := parser.String("t", "title", &argparse.Options{Required: false, Help: "title for message", Default: ""})
+	title := parser.String("t", "title", &argparse.Options{Required: true, Help: "title for message", Default: ""})
 	verbose := parser.Flag("v", "verbose", &argparse.Options{Required: false, Help: "print logs to stdout", Default: false})
 	err := parser.Parse(os.Args)
-	log := logger.Init("main", *verbose, true, ioutil.Discard)
-	log.Info("starting")
 	if err != nil {
 		log.Fatal(parser.Usage(err))
+		os.Exit(1)
 	}
-	// get home api credentials from environment variables
-	home_api_user, user_is_set := os.LookupEnv("HOME_API_USER")
-	home_api_auth, auth_is_set := os.LookupEnv("HOME_API_AUTH")
-	home_api_domain, domain_is_set := os.LookupEnv("HOME_API_DOMAIN")
-
-	if !user_is_set || !auth_is_set || !domain_is_set {
-		log.Fatal("missing $HOME_API_USER $HOME_API_AUTH $HOME_API_DOMAIN")
+	if *verbose {
+		log.SetLevel(log.TraceLevel)
 	}
-	// send pushover message via home-api
-	log.Info("going to send a push message.")
-	user_auth := base64.StdEncoding.EncodeToString([]byte(home_api_user + ":" + home_api_auth))
-	header := req.Header{
-		"Accept":        "application/json",
-		"Authorization": "Basic " + user_auth,
+	_, err = sendMessage(*msg, *title)
+	if err != nil {
+		log.Error(err)
 	}
-	param := req.Param{
-		"message": *msg,
-		"title":   *title,
+}
+func main() {
+	log.Info("starting")
+	if is_lambda {
+		lambda.Start(LambdaHandler)
+	} else if is_lambda == false {
+		CommandLine()
 	}
-	// only url is required, others are optional.
-	var resp, req_err = req.Post("https://"+home_api_domain+"/api/pushover", header, param)
-	if req_err != nil {
-		log.Fatal(req_err)
-	}
-	log.Info("response: ", resp)
+	log.Info("done.")
 }
