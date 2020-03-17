@@ -1,0 +1,16 @@
+region: us-east-1
+
+function_name: pushover_squawk
+handler: src/service.lambda_handler
+description: sends a pushover message
+runtime: python3.7
+
+# Experimental Environment variables
+environment_variables:
+   PUSHOVER_API_TOKEN: ${TEST_PUSHOVER_API_TOKEN}
+   PUSHOVER_USER_KEY: ${PUSHOVER_USER_KEY}
+
+# Build options
+build:
+  # a comma delimited list of directories in your project root that contains source to package.
+  source_directories: src

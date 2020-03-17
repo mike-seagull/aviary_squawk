@@ -4,14 +4,20 @@ sends a pushover notifications
 ___
 ![alt text](mine.png "squawk")
 
-#### Environment Variables
-##### Required:
+#### Required Environment Variables
 * PUSHOVER_API_TOKEN
 * PUSHOVER_USER_KEY
-##### Optional:
-* ISLAMBDA
-* VERBOSE
-#### To check a domain
-```pushover_squawk -m $MESSAGE -t $TITLE```
+#### To push a message
+
+`squawk -m $MESSAGE -t $TITLE`
+#### Lambda
+It can also be used as a lambda function by providing an environment variable:
+`ISLAMBDA=true`
+##### To package for Lambda:
+`invoke build --aws-lambda`
+##### To run as a Lambda function locally:
+`invoke run --aws-lambda`
 #### Good use case
-```/painfully/slow/process && pushover_squawk -m "process successful" || pushover_squawk -m "process failed"```
+`/painfully/slow/process && pushover_squawk -m "process successful" || pushover_squawk -m "process failed"`
+#### To bundle to a binary:
+`invoke build --aws-lambda`
