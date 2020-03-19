@@ -20,4 +20,4 @@ It can also be used as a lambda function by providing an environment variable:
 #### Good use case
 `/painfully/slow/process && pushover_squawk -m "process successful" || pushover_squawk -m "process failed"`
 #### To bundle to a binary:
-`invoke build --aws-lambda`
+`invoke build`
